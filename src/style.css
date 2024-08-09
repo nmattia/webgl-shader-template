@@ -7,3 +7,9 @@
 body {
   background-color: antiquewhite;
 }
+
+canvas {
+  margin: 0 auto;
+  display: block;
+  max-width: 640px;
+}

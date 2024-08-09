@@ -49,7 +49,7 @@ float sdAt(vec2 p, float time) {
 // TODO: avoid time going to infinity?
 float sd(vec2 p, float time) {
     const float PERIOD = 2.0;
-    const float PWM = 0.3;
+    const float PWM = 0.2;
 
     time = time/PERIOD;
 
