@@ -6,13 +6,14 @@
 
 body {
   background-color: #f6f7eb;
-  margin: 0;
+  margin: 0 auto;
+  max-width: 400px;
+  padding: 0 1em;
 }
 
 #canvas-container {
   margin: 4em auto;
-  max-width: 900px;
-  aspect-ratio: calc(16 / 9);
+  aspect-ratio: 1;
 }
 
 canvas {
