@@ -5,12 +5,12 @@
 }
 
 body {
-  background-color: antiquewhite;
+  background-color: #f6f7eb;
   margin: 0;
 }
 
 #canvas-container {
-  margin: 0 auto;
+  margin: 4em auto;
   max-width: 900px;
   aspect-ratio: calc(16 / 9);
 }

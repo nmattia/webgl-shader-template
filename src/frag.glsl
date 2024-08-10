@@ -4,73 +4,46 @@ varying vec2 vPosition;
 
 uniform float uTime;
 
-float dot2(vec2 p) {
-    return dot(p.xy, p.xy);
-}
-
-// TODO: do something about "in"
-
-float sdEgg(in vec2 p)
-{
-    p = p + vec2(0.5, 0.0);
-    const float ra = 0.5;
-    const float rb = 0.2;
-    const float k = sqrt(3.0);
-    p.x = abs(p.x);
-    float r = ra - rb;
-    return ((p.y<0.0)       ? length(vec2(p.x,  p.y    )) - r :
-            (k*(p.x+r)<p.y) ? length(vec2(p.x,  p.y-k*r)) :
-            length(vec2(p.x+r,p.y    )) - 2.0*r) - rb;
-}
-
-bool even(float x) {
-    return abs(mod(x, 2.0)) <= 0.1;
-}
-
-float sdHeart( in vec2 p )
-{
-    p = p + vec2(-0.5, 0.5); // TODO
-    p.x = abs(p.x);
-
-    if( p.y+p.x>1.0 )
-        return sqrt(dot2(p-vec2(0.25,0.75))) - sqrt(2.0)/4.0;
-    return sqrt(min(dot2(p-vec2(0.00,1.00)),
-                dot2(p-0.5*max(p.x+p.y,0.0)))) * sign(p.x-p.y);
-}
-
-float sdAt(vec2 p, float time) {
-    if(even(time)) {
-        return sdEgg(p);
-    } else {
-        return sdHeart(p);
-    }
-}
-
-// TODO: avoid time going to infinity?
-float sd(vec2 p, float time) {
-    const float PERIOD = 2.0;
-    const float PWM = 0.2;
-
-    time = time/PERIOD;
-
-    float dPrev = sdAt(p, floor(time));
-    float dNow = sdAt(p, floor(time) + 1.0);
-
-    float dt = smoothstep(0.0, PWM, fract(time));
-
-    return mix(dPrev, dNow, dt);
-}
+#define M_PI 3.1415926535897932384626433832795
 
 void main() {
+    float t = uTime / 1000.0;
+
+    const float PERIOD_SHAPE = 10.0; // seconds
+    const float PERIOD_ROTATE = 40.0; // seconds
+    const float ZOOM = 0.8;
+
+    const vec3 COL1 = vec3(0.9137254901960784,0.30980392156862746, 0.21568627450980393);
+    const vec3 COL2 = vec3(0.2235294117647059, 0.24313725490196078, 0.2549019607843137);
+
+    float delta = 2.095 + 0.030 * sin(t * 2.0 * M_PI / PERIOD_SHAPE);
 
     vec2 p = vec2(vPosition.x, vPosition.y);
 
-    float dist = sd(p, uTime/ 1000.0);
+    bool in_disk = length(p) >= 1.0;
 
-    vec3 color = vec3(step(0.02, abs(dist)));
+    float a = 2.0 * M_PI * t/PERIOD_ROTATE;
+    p *= 1.0/ZOOM * mat2(cos(a), -sin(a), sin(a), cos(a));
 
-    float alpha = 1.0 - step(0.0, dist);
+    for (float i = 0.0; i < 128.0; i += 1.0) {
+        p = 1.03 * (abs(p) - 0.6);
+        p *= mat2(cos(delta), -sin(delta), sin(delta), cos(delta));
+    }
 
-    // TODO: figure out what premultiplied alpha is
-    gl_FragColor = vec4(color * alpha, alpha);
+    vec3 rgb = vec3(0.0);
+    float alpha = 0.0;
+
+    if(1.2 * length(p) >= 0.8) {
+        rgb = COL2;
+        alpha = 1.0;
+    } else if (length(p + vec2(0.2, -0.1)) <= 0.5) {
+        rgb = COL1;
+        alpha = 1.0;
+    }
+
+    if(in_disk) {
+        alpha = 0.0;
+    }
+
+    gl_FragColor = vec4(alpha * rgb, alpha);
 }
