@@ -1,6 +1,6 @@
 precision highp float;
 
-varying vec4 vPosition;
+varying vec2 vPosition;
 
 uniform float uTime;
 
@@ -10,7 +10,7 @@ float dot2(vec2 p) {
 
 // TODO: do something about "in"
 
-float sdEgg( in vec2 p)
+float sdEgg(in vec2 p)
 {
     p = p + vec2(0.5, 0.0);
     const float ra = 0.5;
@@ -63,10 +63,7 @@ float sd(vec2 p, float time) {
 
 void main() {
 
-    // TODO: Extract this
-    const float aspectRatio = 640.0 / 480.0;
-
-    vec2 p = vec2(vPosition.x * aspectRatio, vPosition.y);
+    vec2 p = vec2(vPosition.x, vPosition.y);
 
     float dist = sd(p, uTime/ 1000.0);
 

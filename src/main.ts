@@ -3,46 +3,84 @@ import "./style.css";
 import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
-import { mat4 } from "gl-matrix";
-
 main();
 
 function main() {
   const canvas = document.querySelector("#glcanvas");
-
-  if (!(canvas instanceof HTMLCanvasElement)) {
-    return; // TODO: error
-  }
+  if (!(canvas instanceof HTMLCanvasElement)) return; // TODO: error
 
   const gl = canvas.getContext("webgl");
 
-  if (!gl) {
-    return; // TODO: error
-  }
-
-  // Set the color used to clear
-  gl.clearColor(0, 0, 0, 1);
-  // Clear canvas
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  if (!gl) return; // TODO: error
 
   // Compile the shaders
-  const shaderProgram = createShaderProgram(gl, {
+  const shader = createShaderProgram(gl, {
     vertex: vertShaderSrc,
     fragment: fragShaderSrc,
   });
-  if (!shaderProgram) {
-    console.log("no shader");
+  if (!shader) {
+    console.error("no shader");
     return;
   }
 
-  render(gl, shaderProgram);
+  // Cover the whole canvas with a square
+  // (four corners of square, world coordinates)
+  // Each element is a float (32, i.e. 4 bytes).
+  // TODO: explain each value (top, right, etc)
+  // TODO: rename to "quad"?
+  const [top, left, bottom, right] = [1, -1, -1, 1];
+  const buffer = new Float32Array([
+    right,
+    top,
+    left,
+    top,
+    right,
+    bottom,
+    left,
+    bottom,
+  ]);
+
+  // Create a new buffer and bind it
+  const vbo = gl.createBuffer();
+  if (!vbo) return;
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+  // With bound buffer, load the buffer with data
+  gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW);
+
+  // with `size` = 2 and sizeof(Float32) = 4 (bytes), stride can be inferred as 2 * 4 (bytes)
+  // (we tell gl item size & gl.FLOAT)
+  // num items (4) = buffer.length (8) / vals per vertex (2)
+  // NOTE: if attribute size is > 2 (e.g. vec4 is bigger than vec2) the rest of the values
+  // are filled with defaults (defaults can be set with vertexAttrib[123]f[v].
+
+  // With bound buffer, assign the vertex
+  gl.vertexAttribPointer(
+    shader.aVertexPosition,
+    2 /* vals per vertex, there are two values per vertex (X & Y) */,
+    gl.FLOAT /* the values are floats (32) */,
+    false /* Do not normalize the values */,
+    8 /* TODO */,
+    0 /* start at offset = 0 */,
+  );
+
+  // Attributes are disabled by default, so we enable it
+  // TODO: does this need to be done on every render?
+  gl.enableVertexAttribArray(shader.aVertexPosition);
+
+  animate(gl, { shader, canvas, lastClientWidth: 0, lastClientHeight: 0 });
 }
 
+type State = {
+  shader: ShaderInfo;
+  canvas: HTMLCanvasElement;
+  lastClientWidth: number;
+  lastClientHeight: number;
+};
+
 type ShaderInfo = {
-  program: WebGLProgram;
   aVertexPosition: GLuint;
-  uProjectionMatrix: WebGLUniformLocation;
-  uModelViewMatrix: WebGLUniformLocation;
+  uAspectRatio: WebGLUniformLocation;
   uTime: WebGLUniformLocation;
 };
 
@@ -82,6 +120,9 @@ function createShaderProgram(
     return null;
   }
 
+  // Tell WebGL which shader program we're about to setup & use
+  gl.useProgram(program);
+
   const aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
 
   if (aVertexPosition < 0) {
@@ -89,15 +130,11 @@ function createShaderProgram(
     return null;
   }
 
-  const uProjectionMatrix = gl.getUniformLocation(program, "uProjectionMatrix");
+  const uAspectRatio = gl.getUniformLocation(program, "uAspectRatio");
 
-  if (!uProjectionMatrix) {
-    return null;
-  }
-
-  const uModelViewMatrix = gl.getUniformLocation(program, "uModelViewMatrix");
-
-  if (!uModelViewMatrix) {
+  if (!uAspectRatio) {
+    console.error(gl.getError());
+    console.error("uAspectRatio not found");
     return null;
   }
 
@@ -110,10 +147,8 @@ function createShaderProgram(
   }
 
   return {
-    program,
     aVertexPosition,
-    uProjectionMatrix,
-    uModelViewMatrix,
+    uAspectRatio,
     uTime,
   };
 }
@@ -125,9 +160,7 @@ function loadShader(
 ): WebGLShader | null {
   const shader = gl.createShader(ty);
 
-  if (!shader) {
-    return null;
-  }
+  if (!shader) return null;
 
   gl.shaderSource(shader, src);
 
@@ -142,95 +175,43 @@ function loadShader(
   return shader;
 }
 
-function render(gl: WebGLRenderingContext, shader: ShaderInfo) {
-  requestAnimationFrame(() => render(gl, shader));
-  const canvas = gl.canvas;
-  if (!(canvas instanceof HTMLCanvasElement)) {
-    return;
-  }
-  gl.clearColor(0.0, 0.0, 0.0, 0.0);
-  gl.clearDepth(1.0);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
+function animate(gl: WebGLRenderingContext, state: State) {
+  requestAnimationFrame(() => animate(gl, state));
 
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  resizeIfDimChanged(gl, state);
 
-  // Tell WebGL which shader program we're about to setup & use
-  gl.useProgram(shader.program);
+  gl.uniform1f(state.shader.uTime, performance.now());
 
-  const projectionMatrix = mat4.create();
-  const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-
-  // In world coordinates
-  const height = 100;
-  const width = height * aspectRatio;
-  const [left, right, bottom, top] = [
-    -width / 2,
-    width / 2,
-    -height / 2,
-    height / 2,
-  ];
-  const [near, far] = [-1.0, 1.0]; // In world coordinates too
-  mat4.ortho(projectionMatrix, left, right, bottom, top, near, far);
-
-  gl.uniform1f(shader.uTime, performance.now());
-
-  // Fill the uniform with the given 4x4 (4) float (f) matrix vector (v).
-  gl.uniformMatrix4fv(
-    shader.uProjectionMatrix,
-    false /* do NOT transpose the matrix */,
-    projectionMatrix,
-  );
-
-  // Identity matrix
-  const modelViewMatrix = mat4.create();
-
-  gl.uniformMatrix4fv(
-    shader.uModelViewMatrix,
-    false /* do NOT transpose the matrix */,
-    modelViewMatrix,
-  );
-
-  // Cover the whole canvas with a square
-  // (four corners of square, world coordinates)
-  // Each element is a float (32, i.e. 4 bytes).
-  const positions = new Float32Array([
-    right,
-    top,
-    left,
-    top,
-    right,
-    bottom,
-    left,
-    bottom,
-  ]);
-
-  // Create a new buffer and load it up with the floats
-  const squareBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-  if (!squareBuffer) {
-    return;
-  }
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, squareBuffer);
-
-  gl.vertexAttribPointer(
-    shader.aVertexPosition,
-    2 /* there are two values per vertex (X & Y) */,
-    gl.FLOAT /* the values are floats (32) */,
-    false /* Do not normalize the values */,
-    0 /* don't set a stride but infer from number of values + value type */,
-    0 /* start at offset = 0 */,
-  );
-
-  // Attributes are disabled by default, so we enable it
-  // TODO: does this need to be done on every render?
-  gl.enableVertexAttribArray(shader.aVertexPosition);
-
+  // With bound buffer, draw the data
+  // NOTE: this draws over the entire canvas so we don't clear
   gl.drawArrays(
     gl.TRIANGLE_STRIP /* draw triangles */,
-    0 /* Start at ??? */,
-    4 /* TODO ??? */,
+    0 /* Start at 0 */,
+    4 /* draw n vertices (from attribute) */,
   );
+}
+
+function resizeIfDimChanged(gl: WebGLRenderingContext, state: State) {
+  const newClientWidth = state.canvas.clientWidth;
+  const newClientHeight = state.canvas.clientHeight;
+
+  if (
+    newClientWidth === state.lastClientWidth &&
+    newClientHeight === state.lastClientHeight
+  )
+    return;
+
+  state.lastClientWidth = newClientWidth;
+  state.lastClientHeight = newClientHeight;
+  state.canvas.width = state.canvas.clientWidth * window.devicePixelRatio;
+  state.canvas.height = state.canvas.clientHeight * window.devicePixelRatio;
+  gl.viewport(
+    0,
+    0,
+    state.canvas.clientWidth * window.devicePixelRatio,
+    state.canvas.clientHeight * window.devicePixelRatio,
+  );
+
+  const aspectRatio = state.canvas.clientWidth / state.canvas.clientHeight;
+  gl.uniform1f(state.shader.uAspectRatio, aspectRatio);
 }

@@ -1,13 +1,9 @@
+attribute vec2 aVertexPosition;
 
-attribute vec4 aVertexPosition;
-
-uniform mat4 uModelViewMatrix;
-uniform mat4 uProjectionMatrix;
-
-varying vec4 vPosition;
+uniform float uAspectRatio;
+varying vec2 vPosition;
 
 void main() {
-
-    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-    vPosition = gl_Position;
+    gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+    vPosition = gl_Position.xy * vec2(uAspectRatio, 1.0);
 }
