@@ -1,4 +1,5 @@
 :root {
+  color: #393e41;
   font-family: "Hind", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -18,7 +19,7 @@ body {
   background-color: #f6f7eb;
   margin: 0 auto;
   max-width: 450px;
-  padding: 0 1em;
+  padding: 2em 1em;
 }
 
 #canvas-container {
@@ -32,4 +33,31 @@ canvas {
 
   /* clientWidth/clientHeight include padding */
   padding: 0;
+}
+
+footer {
+  text-align: center;
+  padding: 7em 0 3em;
+  margin: auto;
+  color: #6f7a80;
+  font-size: 0.8em;
+}
+
+a:link,
+a:visited {
+  text-decoration: underline;
+  color: #6f7a80;
+}
+
+a:hover {
+  color: #393e41;
+}
+
+footer a:link,
+footer a:visited {
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
 }

@@ -15,19 +15,58 @@
   <body>
     <h1>WebGL Shader Template</h1>
     <p>
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua.
+      This is a template for getting started with
+      <a
+        href="https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API"
+        target="_blank"
+        rel="noopener noreferrer"
+        >WebGL</a
+      >, without using any external dependencies.
     </p>
     <div id="canvas-container">
       <canvas id="glcanvas"></canvas>
     </div>
     <p>
-      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-      aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in
-      voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur
-      sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-      mollit anim id est laborum.
+      The code lives on GitHub at
+      <a
+        href="https://github.com/nmattia/shader-test"
+        target="_blank"
+        rel="noopener noreferrer"
+        >nmattia/shader-test</a
+      >
+      and can be used as a template.
     </p>
+
+    <p>
+      The animation above is generated on the fly via a WebGL fragment shader.
+      With fragment shaders, you have control over each pixel's color, making it
+      perfect for Creative Coding and generating textures and patterns
+      procedurally.
+    </p>
+
+    <p>
+      WebGL runs on the GPU, allowing for smooth, high-frame-rate animations.
+      The animation above can run at 20'000 FPS (rendering a frame takes 50
+      microseconds with Chrome on M1 MacBook Air).
+    </p>
+
+    <p>
+      This approach allows for stunning unique, ever-changing visuals without
+      the need for external assets. Check out the
+      <a
+        href="https://github.com/nmattia/shader-test"
+        target="_blank"
+        rel="noopener noreferrer"
+        >repository</a
+      >
+      to get started.
+    </p>
+
+    <footer>
+      <a href="https://nmattia.com" target="_blank" rel="noopener noreferrer"
+        >&copy; Nicolas Mattia 2024</a
+      >
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
