@@ -1,5 +1,7 @@
 import "./style.css";
 
+// TODO: note that this inlines the glsl as is, i.e. might not be
+// ideal for prod (no minify, no obfuscate)
 import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
