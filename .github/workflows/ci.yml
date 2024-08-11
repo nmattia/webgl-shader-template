@@ -32,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build
-        run: npm ci && npm run tsc && npm run build -- --base '/${{ github.event.repository.name }}/'
+        run: npm ci && npm run tsc && npm run build -- --base ''
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
