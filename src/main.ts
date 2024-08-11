@@ -5,50 +5,41 @@ import "./style.css";
 import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
-main();
-
 function main() {
   const canvas = document.querySelector("#glcanvas");
-  if (!(canvas instanceof HTMLCanvasElement)) return; // TODO: error
+  if (!(canvas instanceof HTMLCanvasElement)) return err("No canvas found");
 
   const gl = canvas.getContext("webgl");
-
-  if (!gl) return; // TODO: error
+  if (!gl) return err("Could not initialize WebGL");
 
   // Compile the shaders
-  const shader = createShaderProgram(gl, {
+  const shaderInfo = intializeProgram(gl, {
     vertex: vertShaderSrc,
     fragment: fragShaderSrc,
   });
-  if (!shader) {
-    console.error("no shader");
-    return;
-  }
 
   // Cover the whole canvas with a square
   // (four corners of square, world coordinates)
   // Each element is a float (32, i.e. 4 bytes).
   // TODO: explain each value (top, right, etc)
-  // TODO: rename to "quad"?
+  // TODO: note: order matter (bc we use TRIANGLE_STRIP later)
   const [top, left, bottom, right] = [1, -1, -1, 1];
-  const buffer = new Float32Array([
-    right,
-    top,
-    left,
-    top,
-    right,
-    bottom,
-    left,
-    bottom,
-  ]);
+  const vertices = new Float32Array(
+    /* prettier-ignore */ [
+    right, top,
+    left, top,
+    right, bottom,
+    left, bottom,
+  ],
+  );
 
   // Create a new buffer and bind it
   const vbo = gl.createBuffer();
-  if (!vbo) return;
+  if (!vbo) return err("Could not create VBO");
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
   // With bound buffer, load the buffer with data
-  gl.bufferData(gl.ARRAY_BUFFER, buffer, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
   // with `size` = 2 and sizeof(Float32) = 4 (bytes), stride can be inferred as 2 * 4 (bytes)
   // (we tell gl item size & gl.FLOAT)
@@ -58,23 +49,22 @@ function main() {
 
   // With bound buffer, assign the vertex
   gl.vertexAttribPointer(
-    shader.aVertexPosition,
+    shaderInfo.aVertexPosition,
     2 /* vals per vertex, there are two values per vertex (X & Y) */,
     gl.FLOAT /* the values are floats (32) */,
     false /* Do not normalize the values */,
-    8 /* TODO */,
+    8 /* TODO use 0 but explain it's equal to 8 */,
     0 /* start at offset = 0 */,
   );
 
   // Attributes are disabled by default, so we enable it
-  // TODO: does this need to be done on every render?
-  gl.enableVertexAttribArray(shader.aVertexPosition);
+  gl.enableVertexAttribArray(shaderInfo.aVertexPosition);
 
-  animate(gl, { shader, canvas, lastClientWidth: 0, lastClientHeight: 0 });
+  render(gl, { shaderInfo, canvas, lastClientWidth: 0, lastClientHeight: 0 });
 }
 
 type State = {
-  shader: ShaderInfo;
+  shaderInfo: ShaderInfo;
   canvas: HTMLCanvasElement;
   lastClientWidth: number;
   lastClientHeight: number;
@@ -86,27 +76,19 @@ type ShaderInfo = {
   uTime: WebGLUniformLocation;
 };
 
-function createShaderProgram(
+function intializeProgram(
   gl: WebGLRenderingContext,
   { vertex, fragment }: { vertex: string; fragment: string },
-): ShaderInfo | null {
+): ShaderInfo {
   const vertShader = loadShader(gl, gl.VERTEX_SHADER, vertex);
-  if (!vertShader) {
-    return null;
-  }
-
   const fragShader = loadShader(gl, gl.FRAGMENT_SHADER, fragment);
-  if (!fragShader) {
-    gl.deleteShader(vertShader);
-    return null;
-  }
 
   const program = gl.createProgram();
 
   if (!program) {
     gl.deleteShader(vertShader);
     gl.deleteShader(fragShader);
-    return null;
+    return err("could not create shader program");
   }
 
   gl.attachShader(program, vertShader);
@@ -115,11 +97,10 @@ function createShaderProgram(
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program));
     gl.deleteShader(vertShader);
     gl.deleteShader(fragShader);
     gl.deleteProgram(program);
-    return null;
+    return err(gl.getProgramInfoLog(program) ?? "could not link program");
   }
 
   // Tell WebGL which shader program we're about to setup & use
@@ -127,26 +108,14 @@ function createShaderProgram(
 
   const aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
 
-  if (aVertexPosition < 0) {
-    console.error("aVertexPosition not found");
-    return null;
-  }
+  if (aVertexPosition < 0)
+    return err("shader attribute aVertexPosition not found");
 
   const uAspectRatio = gl.getUniformLocation(program, "uAspectRatio");
-
-  if (!uAspectRatio) {
-    console.error(gl.getError());
-    console.error("uAspectRatio not found");
-    return null;
-  }
+  if (!uAspectRatio) return err("no uAspectRatio: " + gl.getError());
 
   const uTime = gl.getUniformLocation(program, "uTime");
-
-  if (!uTime) {
-    console.error(gl.getError());
-    console.error("uTime not found");
-    return null;
-  }
+  if (!uTime) return err("no uTime: " + gl.getError());
 
   return {
     aVertexPosition,
@@ -159,30 +128,27 @@ function loadShader(
   gl: WebGLRenderingContext,
   ty: number,
   src: string,
-): WebGLShader | null {
+): WebGLShader {
   const shader = gl.createShader(ty);
-
-  if (!shader) return null;
+  if (!shader) return err("could not create shader");
 
   gl.shaderSource(shader, src);
-
   gl.compileShader(shader);
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader));
     gl.deleteShader(shader);
-    return null;
+    return err(gl.getShaderInfoLog(shader) ?? "could not compile shader");
   }
 
   return shader;
 }
 
-function animate(gl: WebGLRenderingContext, state: State) {
-  requestAnimationFrame(() => animate(gl, state));
+function render(gl: WebGLRenderingContext, state: State) {
+  requestAnimationFrame(() => render(gl, state));
 
   resizeIfDimChanged(gl, state);
 
-  gl.uniform1f(state.shader.uTime, performance.now());
+  gl.uniform1f(state.shaderInfo.uTime, performance.now());
 
   // With bound buffer, draw the data
   // NOTE: this draws over the entire canvas so we don't clear
@@ -194,26 +160,33 @@ function animate(gl: WebGLRenderingContext, state: State) {
 }
 
 function resizeIfDimChanged(gl: WebGLRenderingContext, state: State) {
-  const newClientWidth = state.canvas.clientWidth;
-  const newClientHeight = state.canvas.clientHeight;
+  const clientWidth = state.canvas.clientWidth;
+  const clientHeight = state.canvas.clientHeight;
 
   if (
-    newClientWidth === state.lastClientWidth &&
-    newClientHeight === state.lastClientHeight
+    clientWidth === state.lastClientWidth &&
+    clientHeight === state.lastClientHeight
   )
     return;
 
-  state.lastClientWidth = newClientWidth;
-  state.lastClientHeight = newClientHeight;
-  state.canvas.width = state.canvas.clientWidth * window.devicePixelRatio;
-  state.canvas.height = state.canvas.clientHeight * window.devicePixelRatio;
-  gl.viewport(
-    0,
-    0,
-    state.canvas.clientWidth * window.devicePixelRatio,
-    state.canvas.clientHeight * window.devicePixelRatio,
-  );
+  state.lastClientWidth = clientWidth;
+  state.lastClientHeight = clientHeight;
 
-  const aspectRatio = state.canvas.clientWidth / state.canvas.clientHeight;
-  gl.uniform1f(state.shader.uAspectRatio, aspectRatio);
+  const pxWidth = clientWidth * window.devicePixelRatio;
+  const pxHeight = clientHeight * window.devicePixelRatio;
+
+  state.canvas.width = pxWidth;
+  state.canvas.height = pxHeight;
+
+  gl.viewport(0, 0, pxWidth, pxHeight);
+
+  const aspectRatio = clientWidth / clientHeight;
+  gl.uniform1f(state.shaderInfo.uAspectRatio, aspectRatio);
 }
+
+function err(msg: string): any {
+  console.error(msg);
+  throw new Error(msg);
+}
+
+main();
