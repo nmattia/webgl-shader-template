@@ -8,7 +8,7 @@
 This serves as a boilerplate for creating WebGL-based applications using
 [Vite](https://vitejs.dev/) and [TypeScript](https://www.typescriptlang.org/).
 You can view the template built and deployed at
-[nmattia.com/webgl-starter-template](https://nmattia.com/webgl-starter-template).
+[https://nmattia.github.io/webgl-starter-template/](https://nmattia.github.io/webgl-shader-template/).
 
 Whether you're just getting started with WebGL or looking for a quick way to
 bootstrap your shader projects, this template should serve as a solid
