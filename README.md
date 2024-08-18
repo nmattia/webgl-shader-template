@@ -1,3 +1,8 @@
+
+<p align="center">
+  <img width=300 height=300 src="https://github.com/user-attachments/assets/52f41567-effd-49a3-90b1-544e19d3e3bc" />
+</p>
+
 # WebGL Shader Template
 
 This serves as a boilerplate for creating WebGL-based applications using
