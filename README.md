@@ -51,6 +51,9 @@ The [GitHub Actions](https://github.com/features/actions) workflow defined in
 `.github/workflows/ci.yml` automates the deployment to
 [GitHub Pages](https://pages.github.com/). Make sure you have GitHub Pages
 enabled for your repository (Settings -> Pages -> Source -> GitHub Actions)
+<p align="center">
+  <img width="400" alt="GitHub Pages" src="https://github.com/user-attachments/assets/ef5765ab-86fe-41ef-b44b-a9d0a59771f3">
+</p>
 
 ### Project Structure
 
@@ -67,9 +70,9 @@ webgl-shader-template/
 ### Customizing Shaders
 
 Shaders are stored in the `src/` directory and have a `.glsl` extension. This
-template includes basic vertex shader setting up 4 vertices that the fragment
-shader draws on. Thefragment shader includes an animation that you can remove
-or tweak and see how your changes affect what is shown on the screen.
+template includes a basic vertex shader setting up 4 vertices that the fragment
+shader draws on. The fragment shader includes an animation that you can remove
+or tweak to see how your changes affect what is shown on the screen.
 
 ### Prettier
 
