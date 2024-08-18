@@ -1,4 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
+# Adapted from https://github.com/actions/deploy-pages/blob/b74272834adc04f971da4b0b055c49fa8d7f90c9/README.md#usage
 name: Deploy static content to Pages
 
 on:
@@ -32,11 +33,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build
+        # Here we set an empty base, which makes vite produce links that are relative
+        # to the assets, as opposed to expecting all assets to be served from `/`.
         run: npm ci && npm run tsc && npm run build -- --base ''
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # TODO
+          path: './dist' # vite's build output
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

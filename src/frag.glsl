@@ -1,3 +1,5 @@
+/* Fragment shader that draws a fancy animation */
+
 precision highp float;
 
 varying vec2 vPosition;
@@ -21,7 +23,7 @@ void main() {
     float r = length(vPosition.xy);
     float theta = atan(vPosition.y, vPosition.x);
 
-    // If we're outside a disk of r = 1, leave pixel transparent
+    // If we're outside a disk of radius 1, leave pixel transparent
     if (r >= 1.0) {
         gl_FragColor = vec4(0.0);
         return;
@@ -31,9 +33,10 @@ void main() {
     // on a sphere
     r = asin(r);
 
-    // Convert back to carthesian
+    // Convert back to cartesian
     vec2 p = vec2(r * cos(theta), r * sin(theta));
 
+    // Rotate
     float a = 2.0 * M_PI * t/PERIOD_ROTATE;
     p *= 1.0/ZOOM * mat2(cos(a), -sin(a), sin(a), cos(a));
 
@@ -46,6 +49,7 @@ void main() {
         p *= mat2(cos(delta), -sin(delta), sin(delta), cos(delta));
     }
 
+    // Initialize the pixel as transparent
     vec3 rgb = vec3(0.0);
     float alpha = 0.0;
 
