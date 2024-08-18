@@ -28,8 +28,11 @@ body {
 }
 
 canvas {
-  width: 100%;
-  height: 100%;
+  aspect-ratio: 1;
+
+  /* Slightly oversize the canvas because it looks nicer */
+  width: 105%;
+  transform: translateX(-2.5%);
 
   /* clientWidth/clientHeight include padding */
   padding: 0;
