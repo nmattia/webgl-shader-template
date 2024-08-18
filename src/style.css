@@ -4,6 +4,8 @@
   line-height: 1.5;
   font-weight: 400;
   font-style: normal;
+  --pad: 1em;
+  --pad-big: 1.7em;
 }
 
 h1 {
@@ -13,35 +15,62 @@ h1 {
   font-optical-sizing: auto;
   font-weight: 700;
   font-style: normal;
+
+  padding-top: var(--pad);
+  padding-bottom: var(--pad);
+}
+
+p {
+  padding-bottom: var(--pad);
 }
 
 body {
   background-color: #f6f7eb;
   margin: 0 auto;
-  max-width: 450px;
-  padding: 2em 1em;
+}
+
+/* In general, the width is at most 480px.
+ * On mobile (< 480px) we limit the content to 450px
+ * and set 15px of padding on either side.
+ *
+ * On bigger screens, no padding, but we limit the content to
+ * 450px (as well) and scale up the canvas to 480px.
+ * */
+@media (width < 480px) {
+  body {
+    max-width: 450px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  canvas {
+    width: 100%;
+  }
+}
+
+@media (width > 480px) {
+  body {
+    max-width: 450px;
+  }
+
+  canvas {
+    width: 480px;
+    transform: translateX(-15px);
+  }
 }
 
 #canvas-container {
-  margin: 4em auto;
-  aspect-ratio: 1;
+  padding: var(--pad-big) 0;
 }
 
 canvas {
   aspect-ratio: 1;
-
-  /* Slightly oversize the canvas because it looks nicer */
-  width: 105%;
-  transform: translateX(-2.5%);
-
-  /* clientWidth/clientHeight include padding */
-  padding: 0;
 }
 
 footer {
   text-align: center;
-  padding-top: 7em;
-  margin: auto;
+  padding-top: var(--pad-big);
+  padding-bottom: var(--pad);
   color: #6f7a80;
   font-size: 0.8em;
 }
