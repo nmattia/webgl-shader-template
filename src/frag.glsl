@@ -23,6 +23,9 @@ void main() {
     float r = length(vPosition.xy);
     float theta = atan(vPosition.y, vPosition.x);
 
+    // Rotate with time
+    theta += 2.0 * M_PI * t/PERIOD_ROTATE;
+
     // If we're outside a disk of radius 1, leave pixel transparent
     if (r >= 1.0) {
         gl_FragColor = vec4(0.0);
@@ -33,12 +36,11 @@ void main() {
     // on a sphere
     r = asin(r);
 
+    // Pattern zoom
+    r = r / ZOOM;
+
     // Convert back to cartesian
     vec2 p = vec2(r * cos(theta), r * sin(theta));
-
-    // Rotate
-    float a = 2.0 * M_PI * t/PERIOD_ROTATE;
-    p *= 1.0/ZOOM * mat2(cos(a), -sin(a), sin(a), cos(a));
 
     // delta in the animation found empirically (though with known period)
     float delta = 2.095 + 0.030 * sin(t * 2.0 * M_PI / PERIOD_SHAPE);
@@ -64,7 +66,7 @@ void main() {
 
     // Add subtle shading
     // (light in top-left and dark in bottom right)
-    rgb -= cos(theta + M_PI/4.0) * r / 15.0;
+    rgb -= cos(atan(vPosition.y, vPosition.x) + M_PI/4.0) * r / 15.0;
 
     gl_FragColor = vec4(alpha * rgb, alpha);
 }
