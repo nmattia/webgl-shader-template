@@ -70,7 +70,7 @@ canvas {
 footer {
   text-align: center;
   padding-top: var(--pad-big);
-  padding-bottom: var(--pad);
+  padding-bottom: var(--pad-big);
   color: #6f7a80;
   font-size: 0.8em;
 }
@@ -88,6 +88,7 @@ a:hover {
 footer a:link,
 footer a:visited {
   text-decoration: none;
+  font-weight: bold;
 }
 
 footer a:hover {
