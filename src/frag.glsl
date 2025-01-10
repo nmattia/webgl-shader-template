@@ -6,18 +6,17 @@ varying vec2 vPosition;
 
 uniform float uTime;
 
+/* colors used in the shader */
+uniform vec3 uColPrimary;
+uniform vec3 uColPop;
+
 #define M_PI 3.1415926535897932384626433832795
 
-void main() {
-    float t = uTime / 1000.0; // time in seconds
-
+/* Returns the color (RGBA) for the fragment, at time "t" */
+vec4 getColor(float t) {
     const float PERIOD_SHAPE = 10.0; // seconds
     const float PERIOD_ROTATE = 40.0; // seconds
     const float ZOOM = 0.8;
-
-    // Two colors (converted from CSS' hex values to match the page)
-    const vec3 COL1 = vec3(0.9137254901960784,0.30980392156862746, 0.21568627450980393);
-    const vec3 COL2 = vec3(0.2235294117647059, 0.24313725490196078, 0.2549019607843137);
 
     // Convert to polar
     float r = length(vPosition.xy);
@@ -28,8 +27,7 @@ void main() {
 
     // If we're outside a disk of radius 1, leave pixel transparent
     if (r >= 1.0) {
-        gl_FragColor = vec4(0.0);
-        return;
+        return vec4(0.0);
     }
 
     // give it a spherical look by taking r as being the angle of a point
@@ -57,16 +55,22 @@ void main() {
 
     // Find some nice spots (empirically) & make output only 2 colors
     if(1.2 * length(p) >= 0.8) {
-        rgb = COL2;
+        rgb = uColPrimary;
         alpha = 1.0;
     } else if (length(p + vec2(0.2, -0.1)) <= 0.5) {
-        rgb = COL1;
+        rgb = uColPop;
         alpha = 1.0;
     }
 
     // Add subtle shading
     // (light in top-left and dark in bottom right)
-    rgb -= cos(atan(vPosition.y, vPosition.x) + M_PI/4.0) * r / 15.0;
+    rgb -= cos(atan(vPosition.y, vPosition.x) + M_PI/4.0) * r / 15.;
 
-    gl_FragColor = vec4(alpha * rgb, alpha);
+    return vec4(alpha * rgb, alpha);
+
+}
+
+void main() {
+    float t = uTime / 1000.0; // time in seconds
+    gl_FragColor = getColor(t);
 }

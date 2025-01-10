@@ -6,6 +6,31 @@
 import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
+// Returns the RGB color of a css property
+const getComputedColor = (
+  propName: string,
+): { r: string; g: string; b: string } => {
+  /* A (hidden) "color" picker element, used to sample the color on the page */
+  let colorPicker: HTMLDivElement | null =
+    document.querySelector("#color-picker");
+  if (!colorPicker) {
+    colorPicker = document.createElement("div");
+    colorPicker.id = "color-picker";
+    colorPicker.style.display = "none";
+
+    // Needed for the browser to be able to compute the color
+    document.body.append(colorPicker);
+  }
+  colorPicker.style.color = `var(${propName})`;
+
+  // The browser returns 'rgb(R, G, B)'
+  const color = window.getComputedStyle(colorPicker).color;
+  const rgb = color.match(/rgb\((?<r>\d+), (?<g>\d+), (?<b>\d+)\)/)!
+    .groups as any as { r: string; g: string; b: string };
+
+  return rgb;
+};
+
 // The main function that sets everything up and starts the animation loop
 function main() {
   // The the canvas element we'll be drawing on
@@ -101,6 +126,8 @@ type ShaderInputs = {
   // don't mind a null value.
   uAspectRatio: WebGLUniformLocation | null;
   uTime: WebGLUniformLocation | null;
+  uColPrimary: WebGLUniformLocation | null;
+  uColPop: WebGLUniformLocation | null;
 };
 
 // Initialize a new shader program, by compiling the vertex & fragment shaders,
@@ -150,11 +177,15 @@ function lookupShaderInputs(gl: WebGLRenderingContext, program: WebGLProgram) {
 
   const uAspectRatio = gl.getUniformLocation(program, "uAspectRatio");
   const uTime = gl.getUniformLocation(program, "uTime");
+  const uColPrimary = gl.getUniformLocation(program, "uColPrimary");
+  const uColPop = gl.getUniformLocation(program, "uColPop");
 
   return {
     aVertexPosition,
     uAspectRatio,
     uTime,
+    uColPrimary,
+    uColPop,
   };
 }
 
@@ -187,6 +218,23 @@ function render(gl: WebGLRenderingContext, state: State) {
 
   // Inject the current time into (fragment) shader
   gl.uniform1f(state.shaderInputs.uTime, performance.now());
+
+  // Read the (computed) RGB colors from the CSS properties and pass to shader
+  const colPrimary = getComputedColor("--col-primary");
+  gl.uniform3f(
+    state.shaderInputs.uColPrimary,
+    Number(colPrimary.r) / 255,
+    Number(colPrimary.g) / 255,
+    Number(colPrimary.b) / 255,
+  );
+
+  const colPop = getComputedColor("--col-pop");
+  gl.uniform3f(
+    state.shaderInputs.uColPop,
+    Number(colPop.r) / 255,
+    Number(colPop.g) / 255,
+    Number(colPop.b) / 255,
+  );
 
   // With bound buffer, draw the data
   // NOTE: because our 4 vertices cover the entire canvas we don't even need to call
