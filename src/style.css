@@ -1,5 +1,10 @@
 :root {
-  color: #393e41;
+  /* The 3 colors used on the page */
+  --col-primary: rgb(57, 62, 65);
+  --col-pop: rgb(233, 79, 55);
+  --col-background: rgb(246, 247, 235);
+
+  color: var(--col-primary);
   font-family: "Hind", system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -25,7 +30,7 @@ p {
 }
 
 body {
-  background-color: #f6f7eb;
+  background-color: var(--col-background);
   margin: 0 auto;
 }
 
@@ -55,6 +60,7 @@ body {
 
   canvas {
     width: 480px;
+    /* 15px = (480 - 450) / 2 */
     transform: translateX(-15px);
   }
 }
