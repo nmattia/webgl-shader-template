@@ -6,29 +6,21 @@
 import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
-// Returns the RGB color of a css property
-const getComputedColor = (
-  propName: string,
-): { r: string; g: string; b: string } => {
-  /* A (hidden) "color" picker element, used to sample the color on the page */
-  let colorPicker: HTMLDivElement | null =
-    document.querySelector("#color-picker");
-  if (!colorPicker) {
-    colorPicker = document.createElement("div");
-    colorPicker.id = "color-picker";
-    colorPicker.style.display = "none";
+// Parse an 'rgb(R, G, B)' (incl. alpha variations) string into numbers
+// (r, g, b & a between 0 and 1)
+const parseRGBA = (
+  color: string,
+): { r: number; g: number; b: number; a: number } => {
+  const rgb = color.match(
+    /rgb(a?)\((?<r>\d+), (?<g>\d+), (?<b>\d+)(, (?<a>\d(.\d+)?))?\)/,
+  )!.groups as any as { r: string; g: string; b: string; a?: string };
 
-    // Needed for the browser to be able to compute the color
-    document.body.append(colorPicker);
-  }
-  colorPicker.style.color = `var(${propName})`;
-
-  // The browser returns 'rgb(R, G, B)'
-  const color = window.getComputedStyle(colorPicker).color;
-  const rgb = color.match(/rgb\((?<r>\d+), (?<g>\d+), (?<b>\d+)\)/)!
-    .groups as any as { r: string; g: string; b: string };
-
-  return rgb;
+  return {
+    r: Number(rgb.r) / 255,
+    g: Number(rgb.g) / 255,
+    b: Number(rgb.b) / 255,
+    a: Number(rgb.a ?? 1),
+  };
 };
 
 // The main function that sets everything up and starts the animation loop
@@ -220,20 +212,22 @@ function render(gl: WebGLRenderingContext, state: State) {
   gl.uniform1f(state.shaderInputs.uTime, performance.now());
 
   // Read the (computed) RGB colors from the CSS properties and pass to shader
-  const colPrimary = getComputedColor("--col-primary");
-  gl.uniform3f(
+  const colPrimary = parseRGBA(getComputedStyle(state.canvas).color);
+  gl.uniform4f(
     state.shaderInputs.uColPrimary,
-    Number(colPrimary.r) / 255,
-    Number(colPrimary.g) / 255,
-    Number(colPrimary.b) / 255,
+    colPrimary.r,
+    colPrimary.g,
+    colPrimary.b,
+    colPrimary.a,
   );
 
-  const colPop = getComputedColor("--col-pop");
-  gl.uniform3f(
+  const colPop = parseRGBA(getComputedStyle(state.canvas).accentColor);
+  gl.uniform4f(
     state.shaderInputs.uColPop,
-    Number(colPop.r) / 255,
-    Number(colPop.g) / 255,
-    Number(colPop.b) / 255,
+    colPop.r,
+    colPop.g,
+    colPop.b,
+    colPop.a,
   );
 
   // With bound buffer, draw the data

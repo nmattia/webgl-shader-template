@@ -7,8 +7,8 @@ varying vec2 vPosition;
 uniform float uTime;
 
 /* colors used in the shader */
-uniform vec3 uColPrimary;
-uniform vec3 uColPop;
+uniform vec4 uColPrimary;
+uniform vec4 uColPop;
 
 #define M_PI 3.1415926535897932384626433832795
 
@@ -55,11 +55,11 @@ vec4 getColor(float t) {
 
     // Find some nice spots (empirically) & make output only 2 colors
     if(1.2 * length(p) >= 0.8) {
-        rgb = uColPrimary;
-        alpha = 1.0;
+        rgb = uColPrimary.rgb;
+        alpha = uColPrimary.a;
     } else if (length(p + vec2(0.2, -0.1)) <= 0.5) {
-        rgb = uColPop;
-        alpha = 1.0;
+        rgb = uColPop.rgb;
+        alpha = uColPop.a;
     }
 
     // Add subtle shading

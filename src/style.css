@@ -13,6 +13,15 @@
   --pad-big: 1.7em;
 }
 
+/* Basic dark mode, with primary & background swapped */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --col-pop: rgb(233, 79, 55);
+    --col-background: rgb(57, 62, 65);
+    --col-primary: rgb(246, 247, 235);
+  }
+}
+
 h1 {
   font-size: 2.1em;
 
@@ -70,7 +79,13 @@ body {
 }
 
 canvas {
+  --transition-duration: 0.6s;
   aspect-ratio: 1;
+  accent-color: var(--col-pop);
+  color: var(--col-primary);
+  transition:
+    color var(--transition-duration) cubic-bezier(0.3, 0.7, 0, 1),
+    accent-color var(--transition-duration) cubic-bezier(0.3, 0.7, 0, 1);
 }
 
 footer {
