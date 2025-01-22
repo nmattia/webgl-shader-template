@@ -1,35 +1,24 @@
-// This files picks a canvas element from the page, sets up the associated WebGL
-// environment, compiles shaders, and creates a rectangle (square) spanning the
-// whole canvas where the (fragment) shader's output is rendered.
+// This sets up the WebGL environment, compiles shaders, and creates a rectangle
+// (square) spanning the whole canvas where the (fragment) shader's output is
+// rendered.
+//
+// Only provides two uniforms: uTime (time in seconds since app start) and
+// uAspectRatio (ratio width/height of the canvas element). For more uniforms, use
+// the `WebGLRenderingContext` returned by `attach` or specify `beforeRender`.
 
 // Read the .glsl file contents
-import fragShaderSrc from "./frag.glsl?raw";
 import vertShaderSrc from "./vert.glsl?raw";
 
-// Parse an 'rgb(R, G, B)' (incl. alpha variations) string into numbers
-// (r, g, b & a between 0 and 1)
-const parseRGBA = (
-  color: string,
-): { r: number; g: number; b: number; a: number } => {
-  const rgb = color.match(
-    /rgb(a?)\((?<r>\d+), (?<g>\d+), (?<b>\d+)(, (?<a>\d(.\d+)?))?\)/,
-  )!.groups as any as { r: string; g: string; b: string; a?: string };
-
-  return {
-    r: Number(rgb.r) / 255,
-    g: Number(rgb.g) / 255,
-    b: Number(rgb.b) / 255,
-    a: Number(rgb.a ?? 1),
-  };
+type Opts = {
+  beforeRender?: (gl: WebGLRenderingContext, state: State) => void;
 };
 
 // The main function that sets everything up and starts the animation loop
-function main() {
-  // The the canvas element we'll be drawing on
-  const canvas = document.querySelector("#glcanvas");
-  if (!(canvas instanceof HTMLCanvasElement))
-    throw new Error("No canvas found");
-
+export function attach(
+  canvas: HTMLCanvasElement,
+  fragShaderSrc: string,
+  opts?: Opts,
+): WebGLRenderingContext {
   // Get the WebGL context
   const gl = canvas.getContext("webgl");
   if (!gl) throw new Error("Could not initialize WebGL");
@@ -91,7 +80,13 @@ function main() {
   gl.enableVertexAttribArray(aVertexPosition);
 
   // Call our render function which kick-starts the animation loop
-  render(gl, { program, canvas, lastClientWidth: 0, lastClientHeight: 0 });
+  // (scheduled on the next tick to give the caller a change to use `gl`
+  // before the first render, if necessary)
+  setTimeout(() =>
+    render(gl, opts ?? {}, { program, canvas, width: 0, height: 0 }),
+  );
+
+  return gl;
 }
 
 // Some data stored across frames, used in rendering to the canvas and potentially
@@ -101,8 +96,8 @@ type State = {
   canvas: HTMLCanvasElement;
 
   // The last known dimensions of the canvas, used to check if a resize is necessary
-  lastClientWidth: number;
-  lastClientHeight: number;
+  width: number;
+  height: number;
 
   // The compiled shaders
   program: WebGLProgram;
@@ -165,37 +160,31 @@ function loadShader(
 }
 
 // Render the vertices and everything in between
-function render(gl: WebGLRenderingContext, state: State) {
+function render(gl: WebGLRenderingContext, opts: Opts, state: State) {
   // Ask the browser to call us back soon
-  requestAnimationFrame(() => render(gl, state));
+  requestAnimationFrame(() => render(gl, opts, state));
 
   // Check if canvas needs to be resized
-  resizeIfDimChanged(gl, state);
+  const dimChanged = resizeIfDimChanged(gl, state);
+  if (dimChanged) {
+    // Compute the aspect ratio, which is then injected into the vertex shader and use
+    // to convert from normalized device coordinates (NDC, from (-1,-1) to (1,1)) to
+    // coordinates that include the actual aspect ratio (in case the canvas is not
+    // square).
+    const aspectRatio = state.width / state.height;
+    gl.uniform1f(
+      gl.getUniformLocation(state.program, "uAspectRatio"),
+      aspectRatio,
+    );
+  }
 
   // Inject the current time into (fragment) shader
   gl.uniform1f(
     gl.getUniformLocation(state.program, "uTime"),
-    performance.now(),
+    performance.now() / 1000.0 /* time in seconds */,
   );
 
-  // Read the (computed) RGB colors from the CSS properties and pass to shader
-  const colPrimary = parseRGBA(getComputedStyle(state.canvas).color);
-  gl.uniform4f(
-    gl.getUniformLocation(state.program, "uColPrimary"),
-    colPrimary.r,
-    colPrimary.g,
-    colPrimary.b,
-    colPrimary.a,
-  );
-
-  const colPop = parseRGBA(getComputedStyle(state.canvas).accentColor);
-  gl.uniform4f(
-    gl.getUniformLocation(state.program, "uColPop"),
-    colPop.r,
-    colPop.g,
-    colPop.b,
-    colPop.a,
-  );
+  opts.beforeRender?.(gl, state);
 
   // With bound buffer, draw the data
   // NOTE: because our 4 vertices cover the entire canvas we don't even need to call
@@ -208,23 +197,22 @@ function render(gl: WebGLRenderingContext, state: State) {
   );
 }
 
-// Maintenance function to resize the canvas element if necessary
-function resizeIfDimChanged(gl: WebGLRenderingContext, state: State) {
+// Maintenance function to resize the canvas element if necessary.
+//
+// Returns `true` if dimensions changed; `false` otherwise.
+function resizeIfDimChanged(gl: WebGLRenderingContext, state: State): boolean {
   const clientWidth = state.canvas.clientWidth;
   const clientHeight = state.canvas.clientHeight;
 
   // First we check if the canvas' dimensions match what we have in the state, and if
   // so there's nothing else to do.
-  if (
-    clientWidth === state.lastClientWidth &&
-    clientHeight === state.lastClientHeight
-  )
-    return;
+  if (clientWidth === state.width && clientHeight === state.height)
+    return false;
 
   // If the canvas dimensions changed, record the new dimensions for the next time we
   // check
-  state.lastClientWidth = clientWidth;
-  state.lastClientHeight = clientHeight;
+  state.width = clientWidth;
+  state.height = clientHeight;
 
   // Figure out how many pixels need to actually be drawn (clientWidth & clientHeight
   // are in CSS pixels, here we're talking actual pixels)
@@ -236,15 +224,5 @@ function resizeIfDimChanged(gl: WebGLRenderingContext, state: State) {
 
   gl.viewport(0, 0, pxWidth, pxHeight);
 
-  // Compute the aspect ratio, which is then injected into the vertex shader and use
-  // to convert from normalized device coordinates (NDC, from (-1,-1) to (1,1)) to
-  // coordinates that include the actual aspect ratio (in case the canvas is not
-  // square).
-  const aspectRatio = clientWidth / clientHeight;
-  gl.uniform1f(
-    gl.getUniformLocation(state.program, "uAspectRatio"),
-    aspectRatio,
-  );
+  return true;
 }
-
-main();

@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tsc": "tsc",
-    "format": "prettier ./src ./index.html ./package.json -w"
+    "format": "prettier ./src ./index.ts ./index.html ./style.css ./package.json -w"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

@@ -12,8 +12,11 @@ uniform vec4 uColPop;
 
 #define M_PI 3.1415926535897932384626433832795
 
-/* Returns the color (RGBA) for the fragment, at time "t" */
-vec4 getColor(float t) {
+/* Returns the color (RGBA) for the fragment, at time "t" (in seconds) */
+vec4 getColor() {
+
+    float t = uTime;
+
     const float PERIOD_SHAPE = 10.0; // seconds
     const float PERIOD_ROTATE = 40.0; // seconds
     const float ZOOM = 0.8;
@@ -71,6 +74,5 @@ vec4 getColor(float t) {
 }
 
 void main() {
-    float t = uTime / 1000.0; // time in seconds
-    gl_FragColor = getColor(t);
+    gl_FragColor = getColor();
 }

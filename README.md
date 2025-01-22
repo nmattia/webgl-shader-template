@@ -12,7 +12,7 @@ You can view the template built and deployed at
 
 Whether you're just getting started with WebGL or looking for a quick way to
 bootstrap your shader projects, this template should serve as a solid
-foundation. The built site is about 15KB (uncompressed, plus the favicon).
+foundation. The built site is about 15KB (uncompressed, excl. the favicon).
 
 ## Getting Started
 
@@ -60,19 +60,20 @@ enabled for your repository (Settings -> Pages -> Source -> GitHub Actions)
 ```
 webgl-shader-template/
 ├── index.html          # Vite entry point & main page
+├── index.ts            # Demo app/microsite entrypoint
+├── frag.glsl           # Fragment shader (where animation is defined)
 ├── public              # Static assets
 └── src
-    ├── main.ts         # Main TypeScript file setting up WebGL
-    ├── frag.glsl       # Fragment shader (where animation is defined)
+    ├── lib.ts          # TypeScript module setting up WebGL
     └── vert.glsl       # Vertex shader (setting up the vertices)
 ```
 
-### Customizing Shaders
+### Customizing the Shader
 
-Shaders are stored in the `src/` directory and have a `.glsl` extension. This
-template includes a basic vertex shader setting up 4 vertices that the fragment
-shader draws on. The fragment shader includes an animation that you can remove
-or tweak to see how your changes affect what is shown on the screen.
+This template includes a basic vertex shader (`src/vert.glsl`) setting up
+4 vertices that the fragment shader draws on. The fragment shader (`frag.glsl`)
+includes an animation that you can remove or tweak to see how your changes affect
+what is shown on the screen.
 
 ### Prettier
 
