@@ -43,9 +43,6 @@ function main() {
     fragment: fragShaderSrc,
   });
 
-  // Look up attributes & uniforms
-  const shaderInputs = lookupShaderInputs(gl, program);
-
   // Generate vertex data for a square covering the whole canvas using clip
   // coordinates.
   //
@@ -72,6 +69,9 @@ function main() {
   // Load the data
   gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
+  // location of 'aVertexPosition' in the shader program, used to pass in vertex data
+  const aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
+
   // With vertexAttribPointer we assign some meaning to the data bound to the VBO.
   //
   // We bind this to the vertex shader's 'aVertexPosition' attribute. There is a
@@ -79,7 +79,7 @@ function main() {
   // specify '2' and gl.FLOAT such as WebGL knows to read two floats per vertex
   // (and assign that to 'aVertexPosition'.
   gl.vertexAttribPointer(
-    shaderInputs.aVertexPosition,
+    aVertexPosition,
     2 /* vals per vertex, there are two values per vertex (X & Y) */,
     gl.FLOAT /* the values are floats (32bits) */,
     false /* do not normalize the values */,
@@ -88,38 +88,24 @@ function main() {
   );
 
   // Attributes are disabled by default, so we enable it
-  gl.enableVertexAttribArray(shaderInputs.aVertexPosition);
+  gl.enableVertexAttribArray(aVertexPosition);
 
   // Call our render function which kick-starts the animation loop
-  render(gl, { shaderInputs, canvas, lastClientWidth: 0, lastClientHeight: 0 });
+  render(gl, { program, canvas, lastClientWidth: 0, lastClientHeight: 0 });
 }
 
 // Some data stored across frames, used in rendering to the canvas and potentially
 // when resizing the canvas
 type State = {
-  // Attributes & uniforms sent to the shader
-  shaderInputs: ShaderInputs;
   // The canvas element to draw to
   canvas: HTMLCanvasElement;
 
   // The last known dimensions of the canvas, used to check if a resize is necessary
   lastClientWidth: number;
   lastClientHeight: number;
-};
 
-// Used to send data to the shaders
-type ShaderInputs = {
-  // location of 'aVertexPosition' in the shader program, used to pass in vertex data
-  aVertexPosition: GLuint;
-
-  // Locations for uniforms, i.e. globals that are used by the (fragment) shader.
-  // NOTE: we allow the values to be `null` because, in case the values are not used,
-  // they may get optimized away during shader compilation. `gl.uniformXX` functions
-  // don't mind a null value.
-  uAspectRatio: WebGLUniformLocation | null;
-  uTime: WebGLUniformLocation | null;
-  uColPrimary: WebGLUniformLocation | null;
-  uColPop: WebGLUniformLocation | null;
+  // The compiled shaders
+  program: WebGLProgram;
 };
 
 // Initialize a new shader program, by compiling the vertex & fragment shaders,
@@ -159,28 +145,6 @@ function initializeProgram(
   return program;
 }
 
-function lookupShaderInputs(gl: WebGLRenderingContext, program: WebGLProgram) {
-  // Look up the locations for attribute & uniforms (this is used to pass data to
-  // the shaders)
-  const aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
-
-  if (aVertexPosition < 0)
-    throw new Error("shader attribute aVertexPosition not found");
-
-  const uAspectRatio = gl.getUniformLocation(program, "uAspectRatio");
-  const uTime = gl.getUniformLocation(program, "uTime");
-  const uColPrimary = gl.getUniformLocation(program, "uColPrimary");
-  const uColPop = gl.getUniformLocation(program, "uColPop");
-
-  return {
-    aVertexPosition,
-    uAspectRatio,
-    uTime,
-    uColPrimary,
-    uColPop,
-  };
-}
-
 // Upload the shader source (vertex or fragment) and compile the shader
 function loadShader(
   gl: WebGLRenderingContext,
@@ -209,12 +173,15 @@ function render(gl: WebGLRenderingContext, state: State) {
   resizeIfDimChanged(gl, state);
 
   // Inject the current time into (fragment) shader
-  gl.uniform1f(state.shaderInputs.uTime, performance.now());
+  gl.uniform1f(
+    gl.getUniformLocation(state.program, "uTime"),
+    performance.now(),
+  );
 
   // Read the (computed) RGB colors from the CSS properties and pass to shader
   const colPrimary = parseRGBA(getComputedStyle(state.canvas).color);
   gl.uniform4f(
-    state.shaderInputs.uColPrimary,
+    gl.getUniformLocation(state.program, "uColPrimary"),
     colPrimary.r,
     colPrimary.g,
     colPrimary.b,
@@ -223,7 +190,7 @@ function render(gl: WebGLRenderingContext, state: State) {
 
   const colPop = parseRGBA(getComputedStyle(state.canvas).accentColor);
   gl.uniform4f(
-    state.shaderInputs.uColPop,
+    gl.getUniformLocation(state.program, "uColPop"),
     colPop.r,
     colPop.g,
     colPop.b,
@@ -274,7 +241,10 @@ function resizeIfDimChanged(gl: WebGLRenderingContext, state: State) {
   // coordinates that include the actual aspect ratio (in case the canvas is not
   // square).
   const aspectRatio = clientWidth / clientHeight;
-  gl.uniform1f(state.shaderInputs.uAspectRatio, aspectRatio);
+  gl.uniform1f(
+    gl.getUniformLocation(state.program, "uAspectRatio"),
+    aspectRatio,
+  );
 }
 
 main();
