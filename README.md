@@ -3,12 +3,12 @@
   <img width=300 height=300 src="https://github.com/user-attachments/assets/52f41567-effd-49a3-90b1-544e19d3e3bc" />
 </p>
 
-# WebGL Shader Template
+# Quad Shader
 
 This serves as a boilerplate for creating WebGL-based applications using
 [Vite](https://vitejs.dev/) and [TypeScript](https://www.typescriptlang.org/).
 You can view the template built and deployed at
-[https://nmattia.github.io/webgl-starter-template/](https://nmattia.github.io/webgl-shader-template/).
+[https://nmattia.github.io/quad-shader/](https://nmattia.github.io/quad-shader/).
 
 Whether you're just getting started with WebGL or looking for a quick way to
 bootstrap your shader projects, this template should serve as a solid
@@ -58,21 +58,19 @@ enabled for your repository (Settings -> Pages -> Source -> GitHub Actions)
 ### Project Structure
 
 ```
-webgl-shader-template/
+quad-shader/
+├── frag.glsl           # Fragment shader (where animation is defined)
 ├── index.html          # Vite entry point & main page
 ├── index.ts            # Demo app/microsite entrypoint
-├── frag.glsl           # Fragment shader (where animation is defined)
-├── public              # Static assets
 └── src
-    ├── lib.ts          # TypeScript module setting up WebGL
-    └── vert.glsl       # Vertex shader (setting up the vertices)
+    └── index.ts        # TypeScript module setting up WebGL
 ```
 
 ### Customizing the Shader
 
-This template includes a basic vertex shader (`src/vert.glsl`) setting up
-4 vertices that the fragment shader draws on. The fragment shader (`frag.glsl`)
-includes an animation that you can remove or tweak to see how your changes affect
+This template includes a basic vertex shader setting up a quad (4 vertices) that
+the fragment shader draws on. The fragment shader (`frag.glsl`) includes an
+animation that you can remove or tweak to see how your changes affect
 what is shown on the screen.
 
 ### Prettier
