@@ -6,10 +6,23 @@
 // uAspectRatio (ratio width/height of the canvas element). For more uniforms, use
 // the `WebGLRenderingContext` returned by `attach` or specify `beforeRender`.
 
-// Read the .glsl file contents
-import vertShaderSrc from "./vert.glsl?raw";
+const vertShaderSrc = `
+attribute vec2 aVertexPosition;
 
-type Opts = {
+uniform float uAspectRatio;
+varying vec2 vPosition;
+
+void main() {
+    // gl_Position is the ouput, which we simply return
+    gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+
+    // We pre-scale the data passed to the fragment shader so that the
+    // fragment shader doesn't have to care about the aspect ratio
+    vPosition = gl_Position.xy * vec2(uAspectRatio, 1.0);
+}
+`;
+
+export type Opts = {
   beforeRender?: (gl: WebGLRenderingContext, state: State) => void;
 };
 
@@ -219,6 +232,7 @@ function resizeIfDimChanged(gl: WebGLRenderingContext, state: State): boolean {
   const pxWidth = clientWidth * window.devicePixelRatio;
   const pxHeight = clientHeight * window.devicePixelRatio;
 
+  // NOTE: the CSS MUST bound the canvas size otherwise this will grow forever
   state.canvas.width = pxWidth;
   state.canvas.height = pxHeight;
 

@@ -1,6 +1,6 @@
 // This is the app's entrypoint. It picks the canvas element and attaches sets up
 // WebGL via the lib.
-import { attach } from "./src/lib";
+import { attach } from "./src";
 
 // Read the .glsl file contents
 import fragShaderSrc from "./frag.glsl?raw";

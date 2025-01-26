@@ -3,9 +3,8 @@
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
+  # Runs on pushes
   push:
-    branches: main
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -23,11 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Build the app & lib and save as artifacts
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,11 +31,30 @@ jobs:
       - name: Build
         # Here we set an empty base, which makes vite produce links that are relative
         # to the assets, as opposed to expecting all assets to be served from `/`.
-        run: npm ci && npm run tsc && npm run build -- --base ''
-      - name: Upload artifact
+        run: npm ci && npm run build -- --base ''
+      - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # vite's build output
+          path: './dist/pages' # vite's outDir as specified in package.json
+
+        # build the .tgz in ./out and upload as artifact
+      - name: Build library
+        run: mkdir -p ./out && npm pack --pack-destination ./out
+      - name: Upload lib artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './out'
+
+
+  # Single deploy job since we're just deploying
+  deploy:
+    needs: build
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
