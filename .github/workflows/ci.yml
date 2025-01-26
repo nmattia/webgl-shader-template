@@ -44,6 +44,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: './out'
+          name: lib
 
 
   # Single deploy job since we're just deploying
