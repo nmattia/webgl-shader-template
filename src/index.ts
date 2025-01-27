@@ -23,15 +23,24 @@ void main() {
 `;
 
 export type Opts = {
-  beforeRender?: (gl: WebGLRenderingContext, state: State) => void;
+  beforeRender?: (attached: Omit<Attached, "restart">) => void;
+};
+
+/* The result of attaching the shader to a canvas */
+export type Attached = {
+  gl: WebGLRenderingContext;
+  state: State;
+  restart: () => void;
 };
 
 // The main function that sets everything up and starts the animation loop
+// NOTE: if the element is detached from the DOM, the rendering loop exits early
+// and is not re-scheduled.
 export function attach(
   canvas: HTMLCanvasElement,
   fragShaderSrc: string,
   opts?: Opts,
-): WebGLRenderingContext {
+): Attached {
   // Get the WebGL context
   const gl = canvas.getContext("webgl");
   if (!gl) throw new Error("Could not initialize WebGL");
@@ -92,14 +101,20 @@ export function attach(
   // Attributes are disabled by default, so we enable it
   gl.enableVertexAttribArray(aVertexPosition);
 
+  const state: State = { program, canvas, width: 0, height: 0 };
+
   // Call our render function which kick-starts the animation loop
   // (scheduled on the next tick to give the caller a change to use `gl`
   // before the first render, if necessary)
-  setTimeout(() =>
-    render(gl, opts ?? {}, { program, canvas, width: 0, height: 0 }),
-  );
+  setTimeout(() => render(gl, opts ?? {}, state));
 
-  return gl;
+  const attached: Attached = {
+    gl,
+    state,
+    restart: () => requestAnimationFrame(() => render(gl, opts ?? {}, state)),
+  };
+
+  return attached;
 }
 
 // Some data stored across frames, used in rendering to the canvas and potentially
@@ -174,6 +189,11 @@ function loadShader(
 
 // Render the vertices and everything in between
 function render(gl: WebGLRenderingContext, opts: Opts, state: State) {
+  if (!state.canvas.isConnected) {
+    // If the canvas is not in the DOM anymore, exit
+    return;
+  }
+
   // Ask the browser to call us back soon
   requestAnimationFrame(() => render(gl, opts, state));
 
@@ -197,7 +217,7 @@ function render(gl: WebGLRenderingContext, opts: Opts, state: State) {
     performance.now() / 1000.0 /* time in seconds */,
   );
 
-  opts.beforeRender?.(gl, state);
+  opts.beforeRender?.({ gl, state });
 
   // With bound buffer, draw the data
   // NOTE: because our 4 vertices cover the entire canvas we don't even need to call

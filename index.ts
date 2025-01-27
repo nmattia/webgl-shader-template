@@ -14,7 +14,7 @@ export function main() {
   attach(canvas, fragShaderSrc, {
     // Function called before every render, used to update the colors used
     // in the shader
-    beforeRender: (gl, state) => {
+    beforeRender: ({ gl, state }) => {
       // Read the (computed) RGB colors from the CSS properties and pass to shader
       const colPrimary = parseRGBA(getComputedStyle(state.canvas).color);
       gl.uniform4f(
